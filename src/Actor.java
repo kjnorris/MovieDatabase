@@ -23,6 +23,10 @@ public class Actor {
 		this.movieList = new ArrayList<Movie>();
 	}
 	
+	public Actor() {
+		this.movieList = new ArrayList<Movie>();
+	}
+	
 	/**
 	 * Gets the name of the actor.
 	 * @return String containing the actor's name

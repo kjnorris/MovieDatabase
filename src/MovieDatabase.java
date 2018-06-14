@@ -1,5 +1,8 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Scanner;
 
 public class MovieDatabase {
 	private ArrayList<Actor> actorList;
@@ -19,23 +22,36 @@ public class MovieDatabase {
 	}
 
 	public void addMovie(String name, String[] actors) {
-		Movie movieToAdd = new Movie(name);
-		this.movieList.add(movieToAdd);
-		for (String actorToAdd: actors) {
-			boolean newActor = true;
-			for (Actor actor: actorList) {
-				if (actor.getName()==actorToAdd) {
-					newActor = false;
-					actor.addMovie(movieToAdd);
-					movieToAdd.addActor(actor);
-					break;
-				}
+		boolean newMovie = true;
+		
+		for (Movie currMovie: this.movieList) {
+			if (currMovie.getName() == name) {
+				newMovie = false;
 			}
-			if (newActor) {
-				Actor addedActor = new Actor(actorToAdd);
-				addedActor.addMovie(movieToAdd);
-				movieToAdd.addActor(addedActor);
-				this.actorList.add(addedActor);
+		}
+		
+		if (newMovie) {
+			Movie movieToAdd = new Movie(name);
+			this.movieList.add(movieToAdd);
+			
+			for (String actorToAdd: actors) {
+				boolean newActor = true;
+				
+				for (Actor actor: actorList) {
+					if (actor.getName()==actorToAdd) {
+						newActor = false;
+						actor.addMovie(movieToAdd);
+						movieToAdd.addActor(actor);
+						break;
+					}
+				}
+				
+				if (newActor) {
+					Actor addedActor = new Actor(actorToAdd);
+					addedActor.addMovie(movieToAdd);
+					movieToAdd.addActor(addedActor);
+					this.actorList.add(addedActor);
+				}
 			}
 		}
 	}
@@ -87,67 +103,79 @@ public class MovieDatabase {
 	public static void main(String[] args) {
 		MovieDatabase mvdb = new MovieDatabase();
 		
-		Hashtable<String, String[]> movieActors = new Hashtable<String, String[]>() {
-			{
-				put("Sleepers", new String[]{"Brad Pitt", "Dustin Hoffman"});
-				put("Troy", new String[] {"Brad Pitt", "Diane Kruger"});
-				put("Meet Joe Black", new String[] {"Brad Pitt"});
-				put("Oceans Eleven", new String[] {"Brad Pitt"});
-				put("Seven", new String[] {"Brad Pitt"});
-				put("Mr & Mrs Smith", new String[] {"Brad Pitt"});
-				put("12 Years a Slave", new String[] {"Brad Pitt"});
-				put("You've Got Mail", new String[] {"Tom Hanks", "Meg Ryan"});
-				put("Sleepless in Seattle", new String[] {"Tom Hanks", "Meg Ryan"});
-				put("Apollo 13", new String[] {"Tom Hanks"});
-				put("Catch Me If You Can", new String[] {"Tom Hanks"});
-				put("Philadelphia", new String[] {"Tom Hanks"});
-				put("Forrest Gump", new String[] {"Tom Hanks"});
-				put("Courage Under Fire", new String[] {"Meg Ryan"});
-				put("National Treasure", new String[] {"Diane Kruger"});
-				put("Inglorious Bastards", new String[] {"Diane Kruger"});
-				put("The Lost City", new String[] {"Dustin Hoffman"});
-				put("Rain Man", new String[] {"Dustin Hoffman"});
-				put("The Graduate", new String[] {"Dustin Hoffman"});
-				put("Kramer vs. Kramer", new String[] {"Dustin Hoffman"});
+		Hashtable<String, ArrayList<String>> movieActors = new Hashtable<String, ArrayList<String>>();
+		Hashtable<String, Integer> movieRatings = new Hashtable<String, Integer>();
+
+		try {
+			File movieFile = new File("movies.txt");
+			Scanner movieScan = new Scanner(movieFile);
+			while (movieScan.hasNextLine()) {
+				String movieLine = movieScan.nextLine();
+				String[] movieActor = movieLine.split(",");
+				
+				for (int i = 0; i < movieActor.length; i++) {
+					movieActor[i] = movieActor[i].trim();
+				}
+				
+				for (int i = 1; i < movieActor.length; i++) {
+					if (movieActors.containsKey(movieActor[i])) {
+						ArrayList<String> currActors = movieActors.get(movieActor[i]);
+						currActors.add(movieActor[0]);
+						movieActors.replace(movieActor[i], currActors);
+					} else {
+						ArrayList<String> currActors = new ArrayList<String>();
+						currActors.add(movieActor[0]);
+						movieActors.put(movieActor[i], currActors);
+					}
+				}
 			}
-		};
+			movieScan.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		
-		Hashtable<String, Integer> movieRatings = new Hashtable<String, Integer>() {
-			{
-				put("Sleepers", 74);
-				put("Troy", 54);
-				put("Meet Joe Black", 51);
-				put("Oceans Eleven", 82);
-				put("Seven", 79);
-				put("Mr & Mrs Smith", 59);
-				put("You've Got Mail", 69);
-				put("Sleepless in Seattle", 72);
-				put("Apollo 13", 95);
-				put("Catch Me If You Can", 96);
-				put("Philadelphia", 77);
-				put("Forrest Gump", 71);
-				put("National Treasure", 35);
-				put("Rain Man", 90);
-				put("Kramer vs. Kramer", 88);
+		try {
+			File ratingsFile = new File("ratings.txt");
+			Scanner ratingsScan = new Scanner(ratingsFile);
+			if (ratingsScan.hasNextLine()) {
+				//Skip header line
+				ratingsScan.nextLine();
 			}
-		};
+			while (ratingsScan.hasNextLine()) {
+				String ratingsLine = ratingsScan.nextLine().trim();
+				String[] movieRating = ratingsLine.split("\\s+");
+				String movieTitle = "";
+				for (int i = 0; i < movieRating.length - 1; i++) {
+					movieTitle = movieTitle + movieRating[i] + " ";
+				}
+				movieTitle = movieTitle.trim();
+				int currRating = Integer.parseInt(movieRating[movieRating.length-1]);
+				movieRatings.put(movieTitle, currRating);
+			}
+			ratingsScan.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 		
 		for (String currentMovie: movieActors.keySet()) {
-			mvdb.addMovie(currentMovie, movieActors.get(currentMovie));
-		}
-		
-		
-		for (String currentMovie: movieRatings.keySet()) {
-			mvdb.addRating(currentMovie,  (double) movieRatings.get(currentMovie));
+			ArrayList<String> currActors = movieActors.get(currentMovie);
+			String[] addActors = currActors.toArray(new String[currActors.size()]);
+			mvdb.addMovie(currentMovie, addActors);
+			if (movieRatings.containsKey(currentMovie)) {
+				mvdb.addRating(currentMovie,  (double) movieRatings.get(currentMovie));
+			}
 		}
 
+		/*
 		for (Movie currMovie: mvdb.getMovieList()) {
 			System.out.println("Movie: \"" + currMovie.getName() + "\" ");
+
 			if (currMovie.getRating() > 0) {
 				System.out.println("Rating: " + currMovie.getRating());
 			} else {
 				System.out.println("This movie is not yet rated.");
 			}
+
 			System.out.println("Starring: ");
 			for (Actor currActor: currMovie.getActorList()) {
 				System.out.println("  " + currActor.getName());
@@ -155,7 +183,7 @@ public class MovieDatabase {
 			System.out.print("\n\n");;
 		}
 		
-		/*
+
 		for (Actor currActor: mvdb.getActorList()) {
 			System.out.println("Actor: " + currActor.getName());
 			System.out.println("Starred in: ");
@@ -169,7 +197,7 @@ public class MovieDatabase {
 			}
 			System.out.println("\n");
 		}
-		*/
+		 */
 		
 		System.out.println("The highest rated movie is: \"" + mvdb.getBestMovie() + "\"");
 		System.out.println("The highest rated actor is: " + mvdb.getBestActor() + "");
